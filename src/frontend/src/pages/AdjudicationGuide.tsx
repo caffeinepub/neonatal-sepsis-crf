@@ -508,6 +508,72 @@ const sections: GuideSection[] = [
   },
 ];
 
+/** Embeddable guide content — no header/footer, can be placed inside a Sheet or page */
+export function AdjudicationGuideContent() {
+  return (
+    <div className="space-y-6">
+      {/* Quick reference stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "ANC Cutoff", value: "1800/μL", sub: "day 3–28" },
+          { label: "CRP Cutoff", value: "10 mg/L", sub: "positive" },
+          { label: "Procal Cutoff", value: "0.5 ng/mL", sub: "low risk" },
+          { label: "I/T Ratio", value: ">0.2", sub: "abnormal" },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="bg-card border border-border rounded-lg p-3 text-center shadow-xs"
+          >
+            <p className="text-xs text-muted-foreground">{item.label}</p>
+            <p className="text-lg font-bold font-mono text-primary">
+              {item.value}
+            </p>
+            <p className="text-xs text-muted-foreground">{item.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Accordion sections */}
+      <Accordion
+        type="multiple"
+        defaultValue={["what", "criteria"]}
+        className="space-y-3"
+      >
+        {sections.map((section, idx) => (
+          <AccordionItem
+            key={section.id}
+            value={section.id}
+            className="bg-card border border-border rounded-xl overflow-hidden shadow-xs data-[state=open]:shadow-card"
+            data-ocid={`guide.section_${idx + 1}.panel`}
+          >
+            <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 transition-colors [&[data-state=open]]:bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                  {section.icon}
+                </div>
+                <span className="font-semibold text-sm text-left">
+                  {section.title}
+                </span>
+                {section.badge && (
+                  <Badge
+                    variant={section.badgeVariant || "outline"}
+                    className="text-xs"
+                  >
+                    {section.badge}
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-5 pb-5 pt-3 border-t border-border">
+              {section.content}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
+}
+
 export function AdjudicationGuide() {
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 animate-fade-in">
@@ -544,70 +610,7 @@ export function AdjudicationGuide() {
         </div>
       </motion.div>
 
-      {/* Quick reference */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        {[
-          { label: "ANC Cutoff", value: "1800/μL", sub: "day 3–28" },
-          { label: "CRP Cutoff", value: "10 mg/L", sub: "positive" },
-          { label: "Procal Cutoff", value: "0.5 ng/mL", sub: "low risk" },
-          { label: "I/T Ratio", value: ">0.2", sub: "abnormal" },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="bg-card border border-border rounded-lg p-3 text-center shadow-xs"
-          >
-            <p className="text-xs text-muted-foreground">{item.label}</p>
-            <p className="text-lg font-bold font-mono text-primary">
-              {item.value}
-            </p>
-            <p className="text-xs text-muted-foreground">{item.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Accordion sections */}
-      <Accordion
-        type="multiple"
-        defaultValue={["what", "criteria"]}
-        className="space-y-3"
-      >
-        {sections.map((section, idx) => (
-          <motion.div
-            key={section.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.04 }}
-          >
-            <AccordionItem
-              value={section.id}
-              className="bg-card border border-border rounded-xl overflow-hidden shadow-xs data-[state=open]:shadow-card"
-              data-ocid={`guide.section_${idx + 1}.panel`}
-            >
-              <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 transition-colors [&[data-state=open]]:bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    {section.icon}
-                  </div>
-                  <span className="font-semibold text-sm text-left">
-                    {section.title}
-                  </span>
-                  {section.badge && (
-                    <Badge
-                      variant={section.badgeVariant || "outline"}
-                      className="text-xs"
-                    >
-                      {section.badge}
-                    </Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-5 pb-5 pt-3 border-t border-border">
-                {section.content}
-              </AccordionContent>
-            </AccordionItem>
-          </motion.div>
-        ))}
-      </Accordion>
+      <AdjudicationGuideContent />
 
       {/* Footer */}
       <footer className="mt-10 text-center text-xs text-muted-foreground">

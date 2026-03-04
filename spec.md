@@ -1,35 +1,32 @@
-# Neonatal Sepsis CRF App
+# Neonatal Sepsis CRF
 
 ## Current State
-New project. No existing code.
+- Full CRF form with 5 sections (A-E), tabbed navigation, save/complete actions
+- Section D has a Sepsis Screens Overview table with a single "Adjudicator Opinion" text input per row (3 rows for Screen 1, 2, 3)
+- Section D also has per-screen detail sub-forms (Screen 1/2/3 tabs) with parameter values
+- Separate Adjudication Guide page accessible from main navigation
+- No guide reference available while filling in a CRF
+- The overview table's "Adjudicators Opinion" field is a plain text input
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full digital CRF replicating the paper form for the thesis: "Use and Misuse of Sepsis Screen in Neonates: An Observational Study of Clinical Practices"
-- Case list screen: searchable by S.No (case number) and Baby's Name, showing all 300 cases
-- New case / edit case screen with all 5 sections of the CRF
-- Section A: Demographics (CR Number/NICU no., Date of Enrollment, Baby's Name, Date of Birth, Sex checkbox Male/Female, Gestational Age at Birth in weeks, Birth Weight in grams, Mode of Delivery, Indication in case of cesarean delivery, Area: NICU/NNN/CLR/CEN)
-- Section B: Maternal Risk Factors for Sepsis (checkboxes Present/Absent for: Maternal fever >100.4°F, Foul-smelling liquor, Meconium-stained liquor, PROM >18 hours, Prolonged labor, Suspected chorioamnionitis, Maternal antibiotics)
-- Section C: Clinical Features at time of sending screen (checkboxes Present/Absent for: Lethargy/Poor activity, Temperature instability, Feeding intolerance, Respiratory distress, Apnea or seizures, Others x2 free text) + Antibiotics at time of Screen table (Antibiotic name, If yes start date, No)
-- Section D: Sepsis Screens table (Screen no., Date, List of Tests done, Indication, Blood culture sent Yes/No, Expert adjudicators' opinion) + For each screen (Screen 1, 2, 3): Parameter results table (ANC, CRP, Procal, Blood culture, Antibiotic decision of treating team), Final Duration of Antibiotics table (Antibiotic, Start date, Stop date, Duration, Reason for Antibiotic duration), Clinical Course field
-- Section E: Outcome (Final diagnosis with Treating Team and Adjudication columns, Sepsis confirmed Yes/No, Discharge status Alive/Expired, Date of discharge/death)
-- Adjudication Guide page: accessible from sidebar/nav, showing guidance notes for adjudication decisions
-- Save and auto-save functionality for each case
-- Case number auto-increments (S.No 1-300)
-- Summary/dashboard showing total cases, completed vs incomplete
+- In Section D (Screens Overview table), replace the plain "Adjudicators Opinion" text input for each screen row with a structured adjudication decision widget that includes:
+  1. A dropdown/select for the adjudication classification: "Appropriate" / "Inappropriate" / "Indeterminate"
+  2. A small "Guide" button (BookOpen icon) next to each dropdown that opens a Sheet panel showing the full Adjudication Guide content inline
+- Each of the 3 screen rows gets its own independent adjudication decision + guide button
+- Extract AdjudicationGuide content into a reusable `AdjudicationGuideContent` component so it can be rendered inside a Sheet without the page header/footer
 
 ### Modify
-- N/A (new project)
+- AdjudicationGuide.tsx: export a standalone `AdjudicationGuideContent` component containing the quick-reference stats, sections accordion, and CriteriaBox helper
+- CRFForm.tsx Section D overview table: change "Adjudicators Opinion" column to use a Select (Appropriate/Inappropriate/Indeterminate) + a Sheet trigger button per row
+- The Sheet title should indicate which screen it belongs to (e.g. "Screen 1 — Adjudication Guide")
 
 ### Remove
-- N/A (new project)
+- The plain text input for adjudicatorsOpinion in the overview table (replaced by Select dropdown)
 
 ## Implementation Plan
-1. Backend: Store CRF records as stable data with full schema matching all 5 sections. CRUD operations: createCase, updateCase, getCase, listCases, searchCases (by case number and baby name), deleteCase, getCaseCount.
-2. Backend: Each case record holds all section data as nested records. Screens (1-3) stored as array of screen records.
-3. Frontend: Case list page with search bar (by S.No and name), pagination, case status indicators.
-4. Frontend: CRF form with tabbed/sectioned layout matching paper form sections A-E, with all fields, checkboxes, date pickers.
-5. Frontend: Three sepsis screen sub-forms inside Section D (Screen 1, 2, 3), each with parameter table, antibiotic duration table, clinical course.
-6. Frontend: Adjudication Guide page with explanatory content about adjudication criteria.
-7. Frontend: Dashboard stats (total enrolled, cases complete, pending).
+1. AdjudicationGuide.tsx: refactor to export `AdjudicationGuideContent` (the accordion + quick-ref stats + CriteriaBox). The existing `AdjudicationGuide` page wraps it with the page header/footer.
+2. CRFForm.tsx: import Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea from shadcn/ui. Add `BookOpen` to lucide imports.
+3. In Section D overview table, replace the "Adjudicators Opinion" Input with: a flex row containing a Select (Appropriate/Inappropriate/Indeterminate) bound to `row.adjudicatorsOpinion`, plus a small ghost Button with BookOpen icon that sets a local state `guideSheetScreen` to the screen index (1-3).
+4. Render a single Sheet controlled by `guideSheetScreen !== null`, showing `AdjudicationGuideContent` in a ScrollArea. Close resets state to null.

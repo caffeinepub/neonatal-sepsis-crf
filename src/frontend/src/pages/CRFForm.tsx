@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -8,11 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +44,7 @@ import {
   formStateToPatientCase,
   patientCaseToFormState,
 } from "../utils/crfSerialize";
+import { AdjudicationGuideContent } from "./AdjudicationGuide";
 
 const SECTIONS = [
   "A: Demographics",
@@ -725,6 +734,7 @@ function SectionD({ form, set }: SectionProps) {
   ] as const;
   const screenKeys = ["screen1Data", "screen2Data", "screen3Data"] as const;
   const [activeScreen, setActiveScreen] = useState(0);
+  const [guideSheetScreen, setGuideSheetScreen] = useState<number | null>(null);
 
   const updateSST = (idx: number, field: string, value: string) => {
     const updated = sst.map((row, i) =>
@@ -845,15 +855,43 @@ function SectionD({ form, set }: SectionProps) {
                     </Select>
                   </td>
                   <td>
-                    <Input
-                      className="h-7 text-sm"
-                      placeholder="Opinion"
-                      value={row.adjudicatorsOpinion}
-                      onChange={(e) =>
-                        updateSST(idx, "adjudicatorsOpinion", e.target.value)
-                      }
-                      data-ocid={`screens.opinion_${idx + 1}.input`}
-                    />
+                    <div className="flex items-center gap-1">
+                      <Select
+                        value={row.adjudicatorsOpinion || ""}
+                        onValueChange={(v) =>
+                          updateSST(idx, "adjudicatorsOpinion", v)
+                        }
+                      >
+                        <SelectTrigger
+                          className="h-7 text-sm flex-1"
+                          data-ocid={`screens.adjudication_decision_${idx + 1}.select`}
+                        >
+                          <SelectValue placeholder="Select decision" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Appropriate">
+                            Appropriate
+                          </SelectItem>
+                          <SelectItem value="Inappropriate">
+                            Inappropriate
+                          </SelectItem>
+                          <SelectItem value="Indeterminate">
+                            Indeterminate
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => setGuideSheetScreen(idx + 1)}
+                        title={`Open adjudication guide for Screen ${idx + 1}`}
+                        data-ocid={`screens.guide_${idx + 1}.button`}
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1158,6 +1196,28 @@ function SectionD({ form, set }: SectionProps) {
           />
         </FormField>
       </SectionCard>
+
+      {/* Adjudication guide sheet — one per screen row, shared sheet */}
+      <Sheet
+        open={guideSheetScreen !== null}
+        onOpenChange={(open) => !open && setGuideSheetScreen(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl p-0"
+          data-ocid="screens.guide.sheet"
+        >
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              Screen {guideSheetScreen} — Adjudication Guide
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-5rem)] px-6 pb-8 pt-4">
+            <AdjudicationGuideContent />
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
