@@ -9,11 +9,13 @@ import Principal "mo:core/Principal";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
-  var nextId = 1;
+  var nextSNo = 1;
 
   public type PatientCase = {
     sNo : Nat;
@@ -105,15 +107,13 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create cases");
     };
+
     if (cases.size() >= 300) {
       Runtime.trap("Max patient case limit reached! (300)");
     };
-    if (Text.equal(babysName, "") or Text.equal(dateOfBirth, "")) {
-      Runtime.trap("Baby's name and date of birth are required");
-    };
 
     let patientCase : PatientCase = {
-      sNo = nextId;
+      sNo = nextSNo;
       crNumber;
       dateOfEnrollment;
       babysName;
@@ -139,9 +139,10 @@ actor {
       isComplete;
     };
 
-    cases.add(nextId, patientCase);
-    nextId += 1;
-    patientCase.sNo;
+    cases.add(nextSNo, patientCase);
+    let assignedSNo = nextSNo;
+    nextSNo += 1;
+    assignedSNo;
   };
 
   public shared ({ caller }) func updateCase(

@@ -1,11 +1,17 @@
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   ActivitySquare,
   BookOpen,
   ClipboardList,
+  Loader2,
+  LogIn,
+  LogOut,
   PlusCircle,
+  User,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +20,15 @@ interface LayoutProps {
 }
 
 export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
+  const { identity, login, clear, isInitializing, isLoggingIn } =
+    useInternetIdentity();
+
+  const isLoggedIn = !!identity;
+  const principal = identity?.getPrincipal().toString() ?? "";
+  const shortPrincipal = principal
+    ? `${principal.slice(0, 5)}…${principal.slice(-3)}`
+    : "";
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
@@ -63,9 +78,50 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
           />
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-sidebar-border">
-          <p className="text-xs text-sidebar-foreground/40 leading-relaxed">
+        {/* Auth footer */}
+        <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
+          {isInitializing || isLoggingIn ? (
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60"
+              data-ocid="auth.loading_state"
+            >
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span>{isInitializing ? "Loading…" : "Logging in…"}</span>
+            </div>
+          ) : isLoggedIn ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sidebar-accent/60">
+                <User className="w-3.5 h-3.5 text-sidebar-primary shrink-0" />
+                <span
+                  className="text-xs font-mono text-sidebar-foreground/80 truncate"
+                  title={principal}
+                >
+                  {shortPrincipal}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clear}
+                className="w-full justify-start gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                data-ocid="auth.logout.button"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Log out
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              onClick={login}
+              className="w-full gap-2 text-xs"
+              data-ocid="auth.login.button"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Log in to save
+            </Button>
+          )}
+          <p className="text-xs text-sidebar-foreground/40 leading-relaxed px-1">
             Observational Study of Clinical Practices
           </p>
         </div>
@@ -119,6 +175,33 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
           >
             Guide
           </button>
+          {/* Mobile auth button */}
+          {isInitializing || isLoggingIn ? (
+            <Loader2
+              className="w-4 h-4 animate-spin text-sidebar-foreground/60 ml-1"
+              data-ocid="mobile.auth.loading_state"
+            />
+          ) : isLoggedIn ? (
+            <button
+              type="button"
+              onClick={clear}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent transition-colors"
+              title={`Logged in as ${principal}`}
+              data-ocid="mobile.auth.logout.button"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={login}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              data-ocid="mobile.auth.login.button"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
+            </button>
+          )}
         </div>
       </div>
 

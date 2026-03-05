@@ -37,6 +37,9 @@ export interface SepsisScreenTableRow {
   indication: string;
   bloodCultureSent: "Yes" | "No" | "";
   adjudicatorsOpinion: string;
+  adjudicator1Opinion: string;
+  adjudicator2Opinion: string;
+  adjudicator3Opinion: string;
 }
 
 export interface ScreenParameter {
@@ -104,6 +107,9 @@ export function defaultSepsisScreenTableRow(n: number): SepsisScreenTableRow {
     indication: "",
     bloodCultureSent: "",
     adjudicatorsOpinion: "",
+    adjudicator1Opinion: "",
+    adjudicator2Opinion: "",
+    adjudicator3Opinion: "",
   };
 }
 

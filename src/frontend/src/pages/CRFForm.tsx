@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCreateCase,
   useGetCase,
@@ -66,6 +67,7 @@ export function CRFForm({ caseId, onBack, onSaved }: CRFFormProps) {
   const [form, setForm] = useState<CRFFormState>(defaultCRFFormState());
   const [initialized, setInitialized] = useState(false);
 
+  const { identity, login } = useInternetIdentity();
   const { data: existingCase, isLoading: caseLoading } = useGetCase(caseId);
   const { data: caseCount = BigInt(0) } = useGetCaseCount();
   const createMutation = useCreateCase();
@@ -90,6 +92,12 @@ export function CRFForm({ caseId, onBack, onSaved }: CRFFormProps) {
   );
 
   const handleSave = async (complete: boolean) => {
+    if (!identity) {
+      toast.info("Please log in first — the login window will open.");
+      login();
+      return;
+    }
+
     const caseData = formStateToPatientCase(
       form,
       isNew ? BigInt(0) : (caseId as bigint),
@@ -130,7 +138,9 @@ export function CRFForm({ caseId, onBack, onSaved }: CRFFormProps) {
         );
         onSaved();
       } else {
-        await updateMutation.mutateAsync(caseData);
+        await updateMutation.mutateAsync({
+          ...caseData,
+        });
         toast.success(
           complete
             ? "Case updated and marked complete!"
@@ -138,8 +148,12 @@ export function CRFForm({ caseId, onBack, onSaved }: CRFFormProps) {
         );
         onSaved();
       }
-    } catch {
-      toast.error("Failed to save. Please try again.");
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to save. Please try again.";
+      toast.error(msg);
     }
   };
 
@@ -274,13 +288,14 @@ export function CRFForm({ caseId, onBack, onSaved }: CRFFormProps) {
               disabled={isSaving}
               className="gap-2"
               data-ocid="crf.save_draft.button"
+              title={!identity ? "Log in to save" : undefined}
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save Draft
+              {!identity ? "Log in to Save" : "Save Draft"}
             </Button>
             <Button
               onClick={() => handleSave(true)}
@@ -796,7 +811,8 @@ function SectionD({ form, set }: SectionProps) {
                 <th>Tests Listed</th>
                 <th>Indication</th>
                 <th className="w-32 text-center">Blood Culture Sent</th>
-                <th>Adjudicator Opinion</th>
+                <th className="w-52">Adjudication (3 Persons)</th>
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -854,44 +870,59 @@ function SectionD({ form, set }: SectionProps) {
                       </SelectContent>
                     </Select>
                   </td>
+                  {/* 3 adjudicator decisions in one cell */}
                   <td>
-                    <div className="flex items-center gap-1">
-                      <Select
-                        value={row.adjudicatorsOpinion || ""}
-                        onValueChange={(v) =>
-                          updateSST(idx, "adjudicatorsOpinion", v)
-                        }
-                      >
-                        <SelectTrigger
-                          className="h-7 text-sm flex-1"
-                          data-ocid={`screens.adjudication_decision_${idx + 1}.select`}
-                        >
-                          <SelectValue placeholder="Select decision" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Appropriate">
-                            Appropriate
-                          </SelectItem>
-                          <SelectItem value="Inappropriate">
-                            Inappropriate
-                          </SelectItem>
-                          <SelectItem value="Indeterminate">
-                            Indeterminate
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 flex-shrink-0"
-                        onClick={() => setGuideSheetScreen(idx + 1)}
-                        title={`Open adjudication guide for Screen ${idx + 1}`}
-                        data-ocid={`screens.guide_${idx + 1}.button`}
-                      >
-                        <BookOpen className="w-3.5 h-3.5" />
-                      </Button>
+                    <div className="flex flex-col gap-1">
+                      {(
+                        [
+                          "adjudicator1Opinion",
+                          "adjudicator2Opinion",
+                          "adjudicator3Opinion",
+                        ] as const
+                      ).map((field, aIdx) => (
+                        <div key={field} className="flex items-center gap-1">
+                          <span className="text-[10px] font-semibold text-muted-foreground w-4 shrink-0">
+                            {aIdx + 1}.
+                          </span>
+                          <Select
+                            value={row[field] || ""}
+                            onValueChange={(v) => updateSST(idx, field, v)}
+                          >
+                            <SelectTrigger
+                              className="h-6 text-xs flex-1"
+                              data-ocid={`screens.adj${aIdx + 1}_decision_${idx + 1}.select`}
+                            >
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Appropriate">
+                                Appropriate
+                              </SelectItem>
+                              <SelectItem value="Inappropriate">
+                                Inappropriate
+                              </SelectItem>
+                              <SelectItem value="Indeterminate">
+                                Indeterminate
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
                     </div>
+                  </td>
+                  {/* Guide button */}
+                  <td className="text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setGuideSheetScreen(idx + 1)}
+                      title={`Open adjudication guide for Screen ${idx + 1}`}
+                      data-ocid={`screens.guide_${idx + 1}.button`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -1,32 +1,21 @@
 # Neonatal Sepsis CRF
 
 ## Current State
-- Full CRF form with 5 sections (A-E), tabbed navigation, save/complete actions
-- Section D has a Sepsis Screens Overview table with a single "Adjudicator Opinion" text input per row (3 rows for Screen 1, 2, 3)
-- Section D also has per-screen detail sub-forms (Screen 1/2/3 tabs) with parameter values
-- Separate Adjudication Guide page accessible from main navigation
-- No guide reference available while filling in a CRF
-- The overview table's "Adjudicators Opinion" field is a plain text input
+Full CRF app with 5 sections (Demographics, Maternal Risk, Clinical, Screens, Outcome). Dashboard with search. Backend has `createCase` and `updateCase` functions that require the user to be registered via access control. The backend currently traps if `babysName` or `dateOfBirth` is empty, blocking draft saves.
 
 ## Requested Changes (Diff)
 
 ### Add
-- In Section D (Screens Overview table), replace the plain "Adjudicators Opinion" text input for each screen row with a structured adjudication decision widget that includes:
-  1. A dropdown/select for the adjudication classification: "Appropriate" / "Inappropriate" / "Indeterminate"
-  2. A small "Guide" button (BookOpen icon) next to each dropdown that opens a Sheet panel showing the full Adjudication Guide content inline
-- Each of the 3 screen rows gets its own independent adjudication decision + guide button
-- Extract AdjudicationGuide content into a reusable `AdjudicationGuideContent` component so it can be rendered inside a Sheet without the page header/footer
+- Nothing new
 
 ### Modify
-- AdjudicationGuide.tsx: export a standalone `AdjudicationGuideContent` component containing the quick-reference stats, sections accordion, and CriteriaBox helper
-- CRFForm.tsx Section D overview table: change "Adjudicators Opinion" column to use a Select (Appropriate/Inappropriate/Indeterminate) + a Sheet trigger button per row
-- The Sheet title should indicate which screen it belongs to (e.g. "Screen 1 — Adjudication Guide")
+- Backend `createCase`: remove the validation that requires `babysName` and `dateOfBirth` to be non-empty. Drafts must be saveable with any field values including empty strings.
+- Backend `updateCase`: same -- no required-field validation. All fields are optional content.
+- Frontend CRFForm: simplify draft save logic -- remove placeholder injection since backend no longer requires those fields. Show a clear inline prompt to log in if the user clicks Save Draft without being logged in.
 
 ### Remove
-- The plain text input for adjudicatorsOpinion in the overview table (replaced by Select dropdown)
+- The `babysName`/`dateOfBirth` required-field check from the backend
 
 ## Implementation Plan
-1. AdjudicationGuide.tsx: refactor to export `AdjudicationGuideContent` (the accordion + quick-ref stats + CriteriaBox). The existing `AdjudicationGuide` page wraps it with the page header/footer.
-2. CRFForm.tsx: import Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea from shadcn/ui. Add `BookOpen` to lucide imports.
-3. In Section D overview table, replace the "Adjudicators Opinion" Input with: a flex row containing a Select (Appropriate/Inappropriate/Indeterminate) bound to `row.adjudicatorsOpinion`, plus a small ghost Button with BookOpen icon that sets a local state `guideSheetScreen` to the screen index (1-3).
-4. Render a single Sheet controlled by `guideSheetScreen !== null`, showing `AdjudicationGuideContent` in a ScrollArea. Close resets state to null.
+1. Regenerate Motoko backend without the required-field trap in createCase/updateCase
+2. Update frontend CRFForm handleSave to remove placeholder logic and show a better login prompt
